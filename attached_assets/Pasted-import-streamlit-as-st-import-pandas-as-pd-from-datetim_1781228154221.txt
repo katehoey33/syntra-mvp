@@ -1,0 +1,306 @@
+import streamlit as st
+import pandas as pd
+from datetime import datetime
+
+# -----------------------------
+# Page Config
+# -----------------------------
+st.set_page_config(
+    page_title="NYU Learning Intelligence MVP",
+    page_icon="🎓",
+    layout="wide"
+)
+
+# -----------------------------
+# NYU Styling
+# -----------------------------
+st.markdown(
+    """
+    <style>
+    :root {
+        --nyu-purple: #57068c;
+        --nyu-light-purple: #8f4bb8;
+        --nyu-gray: #f5f5f5;
+        --nyu-dark: #222222;
+    }
+
+    .main {
+        background-color: #ffffff;
+    }
+
+    .nyu-header {
+        background: linear-gradient(90deg, #57068c 0%, #8f4bb8 100%);
+        padding: 2rem;
+        border-radius: 14px;
+        color: white;
+        margin-bottom: 1.5rem;
+    }
+
+    .nyu-header h1 {
+        margin-bottom: 0.2rem;
+        font-size: 2.2rem;
+    }
+
+    .nyu-header p {
+        font-size: 1rem;
+        opacity: 0.95;
+    }
+
+    .section-card {
+        background-color: #f8f6fa;
+        border-left: 6px solid #57068c;
+        padding: 1.2rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+
+    .small-card {
+        background-color: #ffffff;
+        border: 1px solid #e5e0eb;
+        padding: 1rem;
+        border-radius: 12px;
+        min-height: 130px;
+    }
+
+    .status-complete {
+        color: #206a3b;
+        font-weight: 700;
+    }
+
+    .status-pending {
+        color: #8a5a00;
+        font-weight: 700;
+    }
+
+    .footer-note {
+        font-size: 0.85rem;
+        color: #555555;
+        margin-top: 2rem;
+    }
+
+    div.stButton > button:first-child {
+        background-color: #57068c;
+        color: white;
+        border-radius: 8px;
+        border: none;
+        padding: 0.6rem 1rem;
+        font-weight: 600;
+    }
+
+    div.stButton > button:first-child:hover {
+        background-color: #3f0468;
+        color: white;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# -----------------------------
+# Session State
+# -----------------------------
+if "brightspace_connected" not in st.session_state:
+    st.session_state.brightspace_connected = False
+
+if "last_sync" not in st.session_state:
+    st.session_state.last_sync = None
+
+# -----------------------------
+# Header
+# -----------------------------
+st.markdown(
+    """
+    <div class="nyu-header">
+        <h1>Welcome Professor X!</h1>
+        <p>Adaptive Learning Context Understanding Platform | NYU Emerging Technologies MVP</p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# -----------------------------
+# Intro
+# -----------------------------
+st.markdown(
+    """
+    <div class="section-card">
+        <h3>Start a New Semester</h3>
+        <p>
+        Set up your course context so the platform can compare student learning evidence against
+        course goals, learning outcomes, assignments, and professor feedback. This MVP does not grade,
+        rank, or monitor students. It summarizes class-level learning patterns to support instructional decisions.
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# -----------------------------
+# Layout
+# -----------------------------
+left_col, right_col = st.columns([2, 1])
+
+with left_col:
+    st.subheader("Course Criteria Setup")
+
+    course_name = st.text_input(
+        "Course Name",
+        value="Emerging Technologies"
+    )
+
+    semester = st.selectbox(
+        "Semester",
+        ["Summer 2026", "Fall 2026", "Spring 2027"]
+    )
+
+    professor_name = st.text_input(
+        "Professor Name",
+        value="Professor X"
+    )
+
+    learning_outcomes = st.text_area(
+        "Course Learning Outcomes",
+        value=(
+            "1. Understand major emerging technology trends.\n"
+            "2. Apply AI concepts to business and academic use cases.\n"
+            "3. Evaluate risks, governance issues, and adoption barriers.\n"
+            "4. Communicate emerging technology solutions clearly."
+        ),
+        height=150
+    )
+
+    st.markdown("---")
+
+    st.subheader("Connect Course Materials")
+
+    brightspace_col, sync_col = st.columns([2, 1])
+
+    with brightspace_col:
+        st.markdown(
+            """
+            **Brightspace Connection**
+
+            In the full version, this platform would connect directly to Brightspace to gather:
+            syllabi, assignments, rubrics, grade outputs, professor feedback, and student survey responses.
+            """
+        )
+
+    with sync_col:
+        if st.button("Connect to Brightspace"):
+            st.session_state.brightspace_connected = True
+            st.session_state.last_sync = datetime.now().strftime("%B %d, %Y at %I:%M %p")
+
+    if st.session_state.brightspace_connected:
+        st.success(f"Brightspace connected. Last refreshed: {st.session_state.last_sync}")
+    else:
+        st.warning("Brightspace not connected yet.")
+
+    st.markdown("### Demo Uploads")
+    st.caption("For the MVP demo, these uploads simulate data being pulled from Brightspace.")
+
+    syllabus_file = st.file_uploader("Upload Syllabus", type=["pdf", "docx", "txt"])
+    materials_file = st.file_uploader("Upload Learning Materials", type=["pdf", "docx", "pptx", "txt"])
+    assignments_file = st.file_uploader("Upload Assignments / Rubrics", type=["pdf", "docx", "csv", "xlsx"])
+
+with right_col:
+    st.subheader("Course Setup Status")
+
+    setup_items = {
+        "Course Name": bool(course_name),
+        "Semester Selected": bool(semester),
+        "Professor Name": bool(professor_name),
+        "Learning Outcomes Added": bool(learning_outcomes),
+        "Brightspace Connected": st.session_state.brightspace_connected,
+        "Syllabus Available": syllabus_file is not None,
+        "Learning Materials Available": materials_file is not None,
+        "Assignments / Rubrics Available": assignments_file is not None,
+    }
+
+    completed = sum(setup_items.values())
+    total = len(setup_items)
+
+    st.metric("Setup Progress", f"{completed}/{total}")
+
+    progress_value = completed / total
+    st.progress(progress_value)
+
+    for item, status in setup_items.items():
+        if status:
+            st.markdown(f"✅ **{item}**")
+        else:
+            st.markdown(f"⚠️ **{item}**")
+
+    st.markdown("---")
+
+    st.markdown(
+        """
+        <div class="small-card">
+            <h4>Responsible Use Reminder</h4>
+            <p>
+            This system supports faculty insight only. It does not assign grades, rank students,
+            or generate disciplinary recommendations.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# -----------------------------
+# Class List
+# -----------------------------
+st.markdown("---")
+st.subheader("Class List")
+
+default_students = pd.DataFrame({
+    "Student ID": ["S001", "S002", "S003", "S004", "S005"],
+    "Student Name": ["Avery Chen", "Jordan Smith", "Maya Patel", "Luis Garcia", "Taylor Morgan"],
+    "Enrollment Status": ["Enrolled", "Enrolled", "Enrolled", "Enrolled", "Enrolled"]
+})
+
+uploaded_class_list = st.file_uploader(
+    "Upload Class List",
+    type=["csv", "xlsx"],
+    help="For the demo, upload a CSV or Excel file with student IDs and names."
+)
+
+if uploaded_class_list is not None:
+    try:
+        if uploaded_class_list.name.endswith(".csv"):
+            class_df = pd.read_csv(uploaded_class_list)
+        else:
+            class_df = pd.read_excel(uploaded_class_list)
+
+        st.success("Class list uploaded successfully.")
+        st.dataframe(class_df, use_container_width=True)
+
+    except Exception as e:
+        st.error("Could not read the uploaded class list. Please check the file format.")
+        st.write(e)
+else:
+    st.info("No class list uploaded yet. Showing demo class list.")
+    st.dataframe(default_students, use_container_width=True)
+
+# -----------------------------
+# Next Step Preview
+# -----------------------------
+st.markdown("---")
+st.subheader("Next Step")
+
+if completed >= 5:
+    st.success(
+        "Course setup is ready for mid-semester learning intelligence review."
+    )
+else:
+    st.warning(
+        "Complete the course setup criteria before running the mid-semester learning intelligence review."
+    )
+
+st.markdown(
+    """
+    <div class="footer-note">
+    MVP Page 1: Professor course setup. Future pages will include Brightspace data refresh,
+    AI learning gap analysis, and the faculty intelligence dashboard.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
