@@ -141,10 +141,13 @@ def load_mock_brightspace_data():
 
     df = pd.DataFrame(data, columns=columns)
 
+    # Expand mock sample to represent the full exported dataset size from your CSV.
+    # This keeps the app light while still presenting the MVP as a Brightspace export.
     repeat_count = 22
     expanded_df = pd.concat([df] * repeat_count, ignore_index=True)
     expanded_df = expanded_df.head(420)
 
+    # Create anonymous IDs across 30 students.
     expanded_df["student_id"] = [f"ANON-{(i % 30) + 1:03d}" for i in range(len(expanded_df))]
 
     return expanded_df
