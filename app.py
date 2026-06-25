@@ -1044,12 +1044,11 @@ with reset_col2:
         reset_demo()
 
 
-tab_setup, tab_sync, tab_dashboard, tab_live_ai = st.tabs(
+tab_setup, tab_sync, tab_live_ai = st.tabs(
     [
         "1. Course Setup",
         "2. Evidence & Feedback Sync",
-        "3. Faculty Dashboard",
-        "4. Live AI Intelligence Layer"
+        "3. Live AI Intelligence Layer"
     ]
 )
 
@@ -1093,13 +1092,14 @@ with tab_setup:
 
         professor_name = st.text_input(
             "Professor Name",
-            value="Professor Smith",
+            value="",
+            placeholder="Example: Professor Smith",
             key=f"professor_name_{st.session_state.reset_counter}"
         )
 
         course_name = st.text_input(
             "Course Name",
-            value="Managing Change and Innovation",
+            value="",
             placeholder="Example: Managing Change and Innovation",
             key=f"course_name_{st.session_state.reset_counter}"
         )
@@ -1285,7 +1285,7 @@ with tab_sync:
             <h3>Course Evidence & Feedback Sync</h3>
             <p>
             Retrieve existing course evidence from Brightspace and an approved student feedback system.
-            This page shows data availability only. AI interpretation appears on the Faculty Dashboard.
+            This page shows data availability only. AI interpretation appears in the Live AI Intelligence Layer.
             </p>
             <span class="pill">Assignment evidence</span>
             <span class="pill">Professor feedback</span>
@@ -1442,7 +1442,7 @@ with tab_sync:
 
             st.dataframe(df[preview_cols].head(10), use_container_width=True)
 
-            st.success("Data is ready for AI learning gap analysis on the Faculty Dashboard.")
+            st.success("Data is ready for AI learning gap analysis in the Live AI Intelligence Layer.")
 
         else:
             st.warning("Course evidence has not been refreshed yet.")
@@ -1452,7 +1452,7 @@ with tab_sync:
             """
             <div class="guardrail-card">
                 <h4>Data Readiness Summary</h4>
-                <p>Refresh course evidence to prepare the faculty dashboard.</p>
+                <p>Refresh course evidence to prepare the live AI analysis.</p>
             </div>
             """,
             unsafe_allow_html=True
@@ -1503,286 +1503,9 @@ with tab_sync:
         )
 
 
-with tab_dashboard:
-    st.markdown(
-        """
-        <div class="section-card">
-            <h3>Faculty Learning Intelligence Dashboard</h3>
-            <p>
-            Generate a class-level learning intelligence summary across course goals,
-            assignment outcomes, professor feedback, and anonymous student reflections.
-            </p>
-            <span class="pill">Learning report</span>
-            <span class="pill">Signal categories</span>
-            <span class="pill">Charts & trends</span>
-            <span class="pill">Recommended actions</span>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    if not st.session_state.course_evidence_loaded:
-        st.warning("No course evidence loaded yet. Go to Page 2 and click Refresh Course Evidence first.")
-
-    else:
-        df = st.session_state.course_evidence_df
-
-        if st.button("Generate AI Learning Gap Summary", key=f"generate_ai_{st.session_state.reset_counter}"):
-            st.session_state.ai_summary_generated = True
-
-        if not st.session_state.ai_summary_generated:
-            st.markdown(
-                """
-                <div class="warning-box">
-                Course evidence is available. Click “Generate AI Learning Gap Summary” to produce faculty-facing learning intelligence.
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                st.metric("Records Available", len(df))
-            with c2:
-                st.metric("Modules Covered", df["week"].nunique())
-            with c3:
-                st.metric("Anonymous Students", df["student_id"].nunique())
-
-        else:
-            signal_counts = df["signal_category"].value_counts()
-            most_common_signal = signal_counts.index[0]
-            avg_confidence = round(df["confidence_score"].mean(), 2)
-            avg_grade = round(df["assignment_grade"].mean(), 1)
-
-            weekly_summary = (
-                df.groupby(["week", "module_topic"])
-                .agg(
-                    avg_grade=("assignment_grade", "mean"),
-                    avg_confidence=("confidence_score", "mean")
-                )
-                .reset_index()
-            )
-
-            lowest_confidence_row = weekly_summary.sort_values("avg_confidence").iloc[0]
-            lowest_grade_row = weekly_summary.sort_values("avg_grade").iloc[0]
-
-            st.markdown(
-                """
-                <div class="success-box">
-                AI learning gap summary generated. Results are aggregated at the class level.
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            report_tab, signal_tab, charts_tab, actions_tab, responsible_tab = st.tabs(
-                [
-                    "Learning Report",
-                    "Signal Categories",
-                    "Charts & Trends",
-                    "Recommended Actions",
-                    "Responsible Use"
-                ]
-            )
-
-            with report_tab:
-                st.markdown("### Executive Learning Summary")
-
-                st.markdown(
-                    f"""
-                    <div class="ai-card">
-                        <h4>Class-Level Interpretation</h4>
-                        <p>
-                        The analysis indicates that students are generally engaging with the course concepts,
-                        but the strongest recurring pattern is <strong>{most_common_signal}</strong>.
-                        Assignment outcomes and anonymous student feedback suggest that the class is strongest
-                        when explaining core concepts, but needs additional support translating change and innovation
-                        frameworks into applied recommendations for realistic organizational or client scenarios.
-                        </p>
-                        <p>
-                        The lowest confidence area is <strong>Week {int(lowest_confidence_row['week'])}: {lowest_confidence_row['module_topic']}</strong>,
-                        while the lowest assignment outcome appears in <strong>Week {int(lowest_grade_row['week'])}: {lowest_grade_row['module_topic']}</strong>.
-                        Faculty attention should focus on applied-transfer practice, framework selection, and clearer model examples.
-                        </p>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-                st.markdown("### Course Learning Health")
-
-                k1, k2, k3, k4 = st.columns(4)
-                with k1:
-                    st.metric("Records Analyzed", len(df))
-                with k2:
-                    st.metric("Avg Confidence", f"{avg_confidence}/5")
-                with k3:
-                    st.metric("Avg Assignment Outcome", f"{avg_grade}%")
-                with k4:
-                    st.metric("Most Common Signal", most_common_signal)
-
-                st.markdown("### Learning Outcome Gap Analysis")
-                gap_table = generate_learning_gap_table(df)
-                st.dataframe(gap_table, use_container_width=True, hide_index=True)
-
-            with signal_tab:
-                st.markdown("### Learning Signal Categories")
-
-                signal_chart = signal_counts.reset_index()
-                signal_chart.columns = ["Learning Signal", "Count"]
-
-                st.dataframe(signal_chart, use_container_width=True, hide_index=True)
-
-                st.markdown(
-                    f"""
-                    <div class="ai-card">
-                        <h4>Signal Interpretation</h4>
-                        <p>
-                        The most common learning signal is <strong>{most_common_signal}</strong>.
-                        This suggests that the primary instructional opportunity is not simply explaining concepts again,
-                        but helping students transfer course frameworks into applied recommendations and real organizational contexts.
-                        </p>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-                st.markdown("### Signal Distribution")
-                st.bar_chart(signal_chart.set_index("Learning Signal"))
-
-            with charts_tab:
-                st.markdown("### Learning Signal Distribution")
-                signal_chart = signal_counts.reset_index()
-                signal_chart.columns = ["Learning Signal", "Count"]
-                st.bar_chart(signal_chart.set_index("Learning Signal"))
-
-                st.markdown(
-                    f"""
-                    <div class="info-box">
-                    Chart insight: <strong>{most_common_signal}</strong> appears most often in the simulated evidence.
-                    This indicates that the dashboard should prioritize instructional recommendations tied to this pattern.
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-                st.markdown("### Average Confidence by Week")
-                confidence_chart = (
-                    df.groupby("week")["confidence_score"]
-                    .mean()
-                    .reset_index()
-                    .set_index("week")
-                )
-                st.line_chart(confidence_chart)
-
-                lowest_conf_week = int(confidence_chart["confidence_score"].idxmin())
-                lowest_conf_value = round(confidence_chart["confidence_score"].min(), 2)
-
-                st.markdown(
-                    f"""
-                    <div class="info-box">
-                    Chart insight: Average confidence is lowest in Week {lowest_conf_week}, at {lowest_conf_value}/5.
-                    This suggests students may need additional support around that module before moving into later assignments.
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-                st.markdown("### Average Assignment Outcome by Week")
-                grade_chart = (
-                    df.groupby("week")["assignment_grade"]
-                    .mean()
-                    .reset_index()
-                    .set_index("week")
-                )
-                st.line_chart(grade_chart)
-
-                lowest_grade_week = int(grade_chart["assignment_grade"].idxmin())
-                lowest_grade_value = round(grade_chart["assignment_grade"].min(), 1)
-
-                st.markdown(
-                    f"""
-                    <div class="info-box">
-                    Chart insight: Average assignment outcomes are lowest in Week {lowest_grade_week}, at {lowest_grade_value}%.
-                    This points to a possible gap between the course learning objective and students’ ability to demonstrate it in assignment work.
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-            with actions_tab:
-                st.markdown("### Recommended Faculty Actions")
-
-                action_table = get_top_faculty_actions(df)
-                default_actions = action_table["Recommended Action"].tolist()
-
-                while len(default_actions) < 3:
-                    default_actions.append("Provide an additional applied example connected to the next assignment.")
-
-                action_1, action_2, action_3 = st.columns(3, gap="large")
-
-                with action_1:
-                    st.markdown(
-                        f"""
-                        <div class="gap-card">
-                            <h4>1. Add Applied Examples</h4>
-                            <p>{default_actions[0]}</p>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-
-                with action_2:
-                    st.markdown(
-                        f"""
-                        <div class="gap-card">
-                            <h4>2. Reinforce Framework Selection</h4>
-                            <p>{default_actions[1]}</p>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-
-                with action_3:
-                    st.markdown(
-                        f"""
-                        <div class="gap-card">
-                            <h4>3. Support Evidence-Based Recommendations</h4>
-                            <p>{default_actions[2]}</p>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-
-                st.markdown("### Supporting Recommendation Evidence")
-                st.dataframe(action_table, use_container_width=True, hide_index=True)
-
-            with responsible_tab:
-                st.markdown(
-                    """
-                    <div class="guardrail-card">
-                        <h4>Responsible AI Guardrail</h4>
-                        <p>
-                        This dashboard does not grade, rank, discipline, or profile individual students.
-                        Assignment outcomes and student reflections are used only as aggregated evidence
-                        to identify class-level learning patterns and instructional attention areas.
-                        Professor Smith remains the final decision-maker.
-                        </p>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-                st.markdown("### Governance Controls Shown in MVP")
-                st.markdown("✅ Anonymous student identifiers only")
-                st.markdown("✅ Aggregated class-level summaries")
-                st.markdown("✅ No individual ranking or risk scoring")
-                st.markdown("✅ No grading decisions made by the system")
-                st.markdown("✅ Human faculty oversight required")
-                st.markdown("✅ Simulated student reflections used for testing")
 
 # -----------------------------
-# Tab 4: Live AI Intelligence Layer
+# Tab 3: Live AI Intelligence Layer
 # -----------------------------
 with tab_live_ai:
     st.markdown(
