@@ -1,9 +1,9 @@
-run = "streamlit run app.py --server.port 80 --server.address 0.0.0.0"
+run = "/home/runner/workspace/.pythonlibs/bin/streamlit run app.py --server.port 80 --server.address 0.0.0.0"
 modules = ["python-3.11"]
 
 [deployment]
 deploymentTarget = "cloudrun"
-run = "streamlit run app.py --server.port 80 --server.address 0.0.0.0"
+run = "/home/runner/workspace/.pythonlibs/bin/streamlit run app.py --server.port 80 --server.address 0.0.0.0"
 
 [workflows]
 runButton = "Project"
